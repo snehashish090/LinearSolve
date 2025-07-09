@@ -59,17 +59,23 @@ class Board:
 
     def __init__(self, matrix, aug_matrix):
 
+        for r_idx in range(len(matrix)):
+            for c_idx in range(len(matrix[r_idx])):
+                matrix[r_idx][c_idx] = float(matrix[r_idx][c_idx])
+                aug_matrix[r_idx] = float(aug_matrix[r_idx])
+
         if len(matrix) != len(aug_matrix):
             raise Exception("Error: matrix shape is incorrect")
+            
         self.matrix = matrix
         self.aug_matrix = aug_matrix
         self.rows = len(self.matrix)
         self.columns = len(self.matrix[0]) if self.rows > 0 else 0
 
-    def get_value(self, cords:tuple[int]):
+    def get_value(self, cords):
         if len(cords) != 2:
             raise Exception("Co-ordinates need to be in the form of (row, column)")
-        return self.matrix[cords[0], cords[1]]
+        return self.matrix[cords[0]][cords[1]]
     
     def get_row(self, index):
         return self.matrix[index]
@@ -77,7 +83,7 @@ class Board:
     def get_aug(self, index):
         return self.aug_matrix[index]
     
-    def add_row(self, row1:list[int], aug_row1, row2:list[int], aug_row2):
+    def add_row(self, row1, aug_row1, row2, aug_row2):
 
         resultant_row = []
 
@@ -88,7 +94,7 @@ class Board:
 
         return resultant_row, resultant_aug_row
     
-    def subtract_row(self, row1:list[int], aug_row1, row2:list[int], aug_row2):
+    def subtract_row(self, row1, aug_row1, row2, aug_row2):
 
         resultant_row = []
         
@@ -99,15 +105,15 @@ class Board:
 
         return resultant_row, resultant_aug_row
     
-    def multiply_row_const(self, row:list[int], aug:int, const:int):
+    def multiply_row_const(self, row, aug, const):
         
         new_aug = aug*const
         resultant = []
         for i in row:
-            resultant.append(int(i*const))
+            resultant.append(i*const)
         return resultant, new_aug
     
-    def divide_row_const(self, row:list[int], aug:int, const:int):
+    def divide_row_const(self, row, aug, const):
 
         new_aug = aug/const
         resultant = []
@@ -122,8 +128,8 @@ class Board:
             self.matrix.index(row2)
         )
         
-        row1 = [int(i) for i in row1]
-        row2 = [int(i) for i in row2]
+        row1 = [i for i in row1]
+        row2 = [i for i in row2]
 
         factors = (1,1)
         least_lcm = math.lcm(row1[0], row2[0])
@@ -140,7 +146,7 @@ class Board:
 
         return factors
 
-    def number_of_zeros(self, row:list[int]):
+    def number_of_zeros(self, row):
         count = 0
         for i in row:
             if i == 0:
@@ -184,12 +190,9 @@ class Action:
 class Solver:
 
     actions:list
-    states:list[Board]
 
-    def __init__(self, state:Board):
+    def __init__(self):
         self.actions = []
-        self.initial_state = state
-        self.states = [state]
 
     def indexes_to_zero(self, state:Board):
 
@@ -208,73 +211,67 @@ class Solver:
 
         return (to_be_zero, already_zero)
     
-    def row_to_solve(self, state:Board):
-        indexes_to_be_filled = self.indexes_to_zero(state)[0]
-        max_row = 0
-
-        for i in indexes_to_be_filled:
-            if i[0] > max_row:
-                max_row = i[0]
-
-        return max_row
     
-    def possible_actions(self, state:Board):
+    def get_starting_point(self, state:Board):
 
-        actions = []
+        flags = [False, False]
+        starting_point = (0,0)
 
-        action = None
+        while starting_point[0] <= state.rows - 1 and starting_point[1] <= state.columns - 1:
+            if starting_point[0] == state.rows - 1 and starting_point[1] == state.columns - 1:
+                return -1 # Signifies complete board
+                  
+            if board.get_value(starting_point) != 1:
+                flags[0] = True
+            
+            for i in range(starting_point[0] + 1, state.rows):
+                if board.get_value((i, starting_point[1])) != 0:
+                    flags[1] = True
 
-        row = state.get_row(self.row_to_solve(state))
-        aug = state.get_aug(self.row_to_solve(state))
+            if True not in flags:
+                starting_point = (starting_point[0] + 1, starting_point[1] + 1)
+            else:
+                return starting_point
+            
+    def algorithmic_solve(self, state:Board):
 
-        for i in state.matrix:
+        while self.get_starting_point(state) != -1:
+            point = self.get_starting_point(board)
+            
+            if state.get_value(point) != 1:
+                row = state.matrix[point[0]]
+                aug_row = state.aug_matrix[point[0]]
+                transformed_row = state.divide_row_const(row, aug_row, state.get_value(point))
+                state.matrix[point[0]] = transformed_row[0]
+                state.aug_matrix[point[0]] = transformed_row[1]
 
-            _state = copy.deepcopy(state)
+            for i in range(point[0] + 1, state.rows):
+                row = state.matrix[point[0]]
+                aug_row = state.aug_matrix[point[0]]
 
-            if i != row:
+                coef = state.get_value((i, point[1]))
+                new_starting_row = state.multiply_row_const(row, aug_row, coef)
+                new_i_row = state.subtract_row(
+                                            state.matrix[i],
+                                            state.aug_matrix[i],
+                                            new_starting_row[0],
+                                            new_starting_row[1]
+                                            )
+                
+                state.matrix[i] = new_i_row[0]
+                state.aug_matrix[1] = new_i_row[1]
 
-                _aug = state.get_aug(state.matrix.index(i))
-                factors = state.LCM(row, i)
+        return state
 
-                _row,_aug = state.multiply_row_const(row, aug, factors[0])
-                _i, _aug_ = state.multiply_row_const(i,_aug, factors[1])
-
-                addition = state.add_row(_row, _aug, _i, _aug_)
-                subtraction = state.subtract_row(_row, _aug, _i, _aug_)
-                index=_state.matrix.index(row)
-
-                if _state.number_of_zeros(addition[0]) > _state.number_of_zeros(subtraction[0]):
-                    action = Addition(MultiplyConst(row, factors[0]), MultiplyConst(row, factors[0]))
-                    _state.matrix[index] = addition[0]
-                    _state.aug_matrix[index] = addition[1]
-                else:
-                    action = Addition(MultiplyConst(row, factors[0]), MultiplyConst(row, factors[0]))
-                    _state.matrix[index] = subtraction[0]
-                    _state.aug_matrix[index] = subtraction[1]
-
-                actions.append(Action(action, state, _state))
-
-        return actions
-    
 board = Board(
     [
-        [2, 3, 4],
-        [5, 5, 5],
-        [4, 3, 2]
-    ], [20, 30, 16]
+        [10, 2, 1],
+        [2, -1, 3],
+        [3, 1, -1]
+    ], [4, 7, 2]
 )
 
-sol = Solver(board)
+sol = Solver()
 
-states = [board]
-
-for i in range(5):
-    pop = states[-1]
-    print(pop)
-    states.remove(pop)
-
-    for i in sol.possible_actions(pop):
-        print(i)
-        states.append(i.output_state)
-
-
+print(board)
+print(sol.algorithmic_solve(board))

@@ -219,59 +219,115 @@ class Solver:
 
         while starting_point[0] <= state.rows - 1 and starting_point[1] <= state.columns - 1:
             if starting_point[0] == state.rows - 1 and starting_point[1] == state.columns - 1:
-                return -1 # Signifies complete board
-                  
-            if board.get_value(starting_point) != 1:
+                return -1 
+            
+            if state.get_value(starting_point) != 1:
                 flags[0] = True
             
             for i in range(starting_point[0] + 1, state.rows):
-                if board.get_value((i, starting_point[1])) != 0:
+                if state.get_value((i, starting_point[1])) != 0:
                     flags[1] = True
 
             if True not in flags:
                 starting_point = (starting_point[0] + 1, starting_point[1] + 1)
             else:
                 return starting_point
+    
+    def implicit_check(self, state:Board):
+        point = self.get_starting_point(state)
+        if point == -1: # Handle case where get_starting_point returns -1
+            return None
+
+        if state.get_value(point) == 0:
+            for i in range(point[0]+1, state.rows):
+                if state.get_value((i, point[1])) != 0:
+                    # Perform row swap for both matrix and augmented matrix
+                    temp_matrix_row = state.matrix[point[0]]
+                    temp_aug_row = state.aug_matrix[point[0]]
+
+                    state.matrix[point[0]] = state.matrix[i]
+                    state.aug_matrix[point[0]] = state.aug_matrix[i]
+
+                    state.matrix[i] = temp_matrix_row
+                    state.aug_matrix[i] = temp_aug_row
+                    return state # Return the modified state
+        return None # Return None if no swap was needed or performed
+
+    def get_backward_starting_point(self, state:Board):
+
+        flags = [False, False]
+        starting_point = (state.rows - 1, state.columns-1)
+
+        while starting_point[0] <= state.rows - 1 and starting_point[1] <= state.columns - 1:
+            if starting_point == (0,0):
+                return -1 
+            
+            if state.get_value(starting_point) != 1:
+                flags[0] = True
+        
+            for i in range(starting_point[0] - 1, -1, -1):
+                if state.get_value((i, starting_point[1])) != 0:
+                    flags[1] = True
+
+            if True not in flags:
+                starting_point = (starting_point[0] - 1, starting_point[1] - 1)
+            else:
+                return starting_point
             
     def algorithmic_solve(self, state:Board):
 
         while self.get_starting_point(state) != -1:
-            point = self.get_starting_point(board)
-            
-            if state.get_value(point) != 1:
-                row = state.matrix[point[0]]
-                aug_row = state.aug_matrix[point[0]]
-                transformed_row = state.divide_row_const(row, aug_row, state.get_value(point))
-                state.matrix[point[0]] = transformed_row[0]
-                state.aug_matrix[point[0]] = transformed_row[1]
+            point = self.get_starting_point(state)
 
-            for i in range(point[0] + 1, state.rows):
-                row = state.matrix[point[0]]
-                aug_row = state.aug_matrix[point[0]]
+            imp_check = self.implicit_check(state)
+            if imp_check is not None:
+                state = imp_check
 
-                coef = state.get_value((i, point[1]))
-                new_starting_row = state.multiply_row_const(row, aug_row, coef)
-                new_i_row = state.subtract_row(
-                                            state.matrix[i],
-                                            state.aug_matrix[i],
-                                            new_starting_row[0],
-                                            new_starting_row[1]
-                                            )
-                
-                state.matrix[i] = new_i_row[0]
-                state.aug_matrix[1] = new_i_row[1]
+            if state.get_value(point) != 0:
+                if state.get_value(point) != 1:
+                    row = state.matrix[point[0]]
+                    aug_row = state.aug_matrix[point[0]]
+                    transformed_row = state.divide_row_const(row, aug_row, state.get_value(point))
+                    state.matrix[point[0]] = transformed_row[0]
+                    state.aug_matrix[point[0]] = transformed_row[1]
 
+                for i in range(point[0] + 1, state.rows):
+                    row = state.matrix[point[0]]
+                    aug_row = state.aug_matrix[point[0]]
+
+                    coef = state.get_value((i, point[1]))
+                    new_starting_row = state.multiply_row_const(row, aug_row, coef)
+                    new_i_row = state.subtract_row(
+                                                state.matrix[i],
+                                                state.aug_matrix[i],
+                                                new_starting_row[0],
+                                                new_starting_row[1]
+                                                )
+                    
+                    state.matrix[i] = new_i_row[0]
+                    state.aug_matrix[i] = new_i_row[1]
+
+        while self.get_backward_starting_point(state) != -1:
+            point = self.get_backward_starting_point(state)
+            if state.get_value(point) != 0:
+                if state.get_value(point) != 1:
+                    row = state.matrix[point[0]]
+                    aug_row = state.aug_matrix[point[0]]
+                    transformed_row = state.divide_row_const(row, aug_row, state.get_value(point))
+                    state.matrix[point[0]] = transformed_row[0]
+                    state.aug_matrix[point[0]] = transformed_row[1]
+                for i in range(point[0] - 1, -1, -1):
+                    row = state.matrix[point[0]]
+                    aug_row = state.aug_matrix[point[0]]
+                    coef = state.get_value((i, point[1]))
+                    new_starting_row = state.multiply_row_const(row, aug_row, coef)
+                    new_i_row = state.subtract_row(
+                                                state.matrix[i],
+                                                state.aug_matrix[i],
+                                                new_starting_row[0],
+                                                new_starting_row[1]
+                                                )
+                    state.matrix[i] = new_i_row[0]
+                    state.aug_matrix[i] = new_i_row[1] 
         return state
-
-board = Board(
-    [
-        [10, 2, 1],
-        [2, -1, 3],
-        [3, 1, -1]
-    ], [4, 7, 2]
-)
-
-sol = Solver()
-
-print(board)
-print(sol.algorithmic_solve(board))
+        

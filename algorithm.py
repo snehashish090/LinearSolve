@@ -1,41 +1,6 @@
 import math
 import copy
 
-class Subtraction:
-
-    def __init__(self, var1, var2):
-        self.var1 = var1
-        self.var2 = var2
-
-    def __str__(self):
-        return f"({self.var1} - {self.var2})"
-    
-    def __repr__(self):
-        return f"({self.var1} - {self.var2})"
-
-class Addition:
-
-    def __init__(self, var1, var2):
-        self.var1 = var1
-        self.var2 = var2
-
-    def __str__(self):
-        return f"({self.var1} + {self.var2})"
-    
-    def __repr__(self):
-        return f"({self.var1} + {self.var2})"
-
-class MultiplyConst:
-    def __init__(self, var1, const):
-        self.var1 = var1
-        self.const = const
-
-    def __str__(self):
-        return f"({self.var1} * {self.const})"
-    
-    def __repr__(self):
-        return f"({self.var1} * {self.const})"
-
 class Board:
     """
     Given a system of linear equations:
@@ -121,38 +86,6 @@ class Board:
             resultant.append(i/const)
         return resultant, new_aug
     
-    def LCM(self, row1:list, row2:list):
-
-        max_index = max(
-            self.matrix.index(row1),
-            self.matrix.index(row2)
-        )
-        
-        row1 = [i for i in row1]
-        row2 = [i for i in row2]
-
-        factors = (1,1)
-        least_lcm = math.lcm(row1[0], row2[0])
-        if least_lcm != 0:
-            factors = (least_lcm / row1[0], least_lcm/row2[0] )
-
-        for i in range(0, max_index):
-
-            if math.lcm(row1[i], row2[i]) == 0:
-                continue
-            if math.lcm(row1[i], row2[i]) < least_lcm:
-                least_lcm = math.lcm(row1[i], row2[i])
-                factors = (least_lcm / row1[i], least_lcm/row2[i])
-
-        return factors
-
-    def number_of_zeros(self, row):
-        count = 0
-        for i in row:
-            if i == 0:
-                count += 1
-        return count
-    
     def __str__(self):
 
         string = ""
@@ -174,43 +107,10 @@ class Board:
 
         return string
 
-class Action:
-
-    def __init__(self, action, input_state:Board, output_state:Board):
-        self.action = action
-        self.input_state = input_state
-        self.output_state = output_state
-
-    def __str__(self):
-        return str(self.action)
-    
-    def __repr__(self):
-        return str(self.action)
-    
 class Solver:
 
-    actions:list
-
     def __init__(self):
-        self.actions = []
-
-    def indexes_to_zero(self, state:Board):
-
-        x = state.rows
-        y = state.columns
-
-        to_be_zero = []
-        already_zero = []
-
-        for col in range(0, y-1):
-            for row in range(1+col, x):
-                if state.matrix[row][col] != 0:
-                    to_be_zero.append((row, col))
-                else:
-                    already_zero.append((row,col))
-
-        return (to_be_zero, already_zero)
-    
+        pass
     
     def get_starting_point(self, state:Board):
 

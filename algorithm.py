@@ -2,33 +2,34 @@ import math
 import copy
 
 class Board:
-    """
-    Given a system of linear equations:
+    matrix:list[list[float]]
+    aug_matrix:list[float]
 
-    2x + 3y + 4z = 20
-    5x + 5y + 5z = 30
-    4x + 3y + 2z = 16
+    def __init__(self, matrix:list[list[float]], aug_matrix:list[float]):
+        """
+        Parameters: 
+            - matrix : 2-Dimensional Array of floating point values which
+                      are corresponding the coefficients values from the equations
+            - aug_matrix : The augment matrix for the system of linear euqation
 
-    matrix = [
-        [2, 3, 4],
-        [5, 5, 5],
-        [4, 3, 2]
-    ]
-
-    aug_matrix = [20, 30, 16]
+        Given a system of linear equations:
+        2x + 3y + 4z = 20 
+        5x + 5y + 5z = 30
+        4x + 3y + 2z = 16
+        
+        The equations have to be converted into the following format
+        matrix = [[2, 3, 4],[5, 5, 5],[4, 3, 2]]
+        aug_matrix = [20, 30, 16]   
     
-    """
-    matrix:list 
-    aug_matrix:list
-
-
-    def __init__(self, matrix, aug_matrix):
-
+        """
+        # In the case that the given values in the arrays are integers,
+        # those values will be converted into floating point values
         for r_idx in range(len(matrix)):
             for c_idx in range(len(matrix[r_idx])):
                 matrix[r_idx][c_idx] = float(matrix[r_idx][c_idx])
                 aug_matrix[r_idx] = float(aug_matrix[r_idx])
 
+        # Checking if the augmented matrix is valid and corresponding to the main matrix
         if len(matrix) != len(aug_matrix):
             raise Exception("Error: matrix shape is incorrect")
             
@@ -37,41 +38,44 @@ class Board:
         self.rows = len(self.matrix)
         self.columns = len(self.matrix[0]) if self.rows > 0 else 0
 
-    def get_value(self, cords):
+    def get_value(self, cords:tuple[int]):
+        """
+        Parameters:
+            - cords: a set of coordinates in a 2-dimensional plane eg: (x,y)
+        Return:
+            - Value of the coefficient at the set of coordinates in the matrix
+        """
         if len(cords) != 2:
             raise Exception("Co-ordinates need to be in the form of (row, column)")
         return self.matrix[cords[0]][cords[1]]
     
     def get_row(self, index):
+        """
+        Parameters:
+            - index: the index of the row that is to be fetched
+        Return:
+            - a floating point array of the row at the index passed
+        """
         return self.matrix[index]
     
     def get_aug(self, index):
         return self.aug_matrix[index]
     
     def add_row(self, row1, aug_row1, row2, aug_row2):
-
         resultant_row = []
-
         for i in range(0, len(row2)):
             resultant_row.append(row1[i]+row2[i])
-
         resultant_aug_row = aug_row1 + aug_row2
-
         return resultant_row, resultant_aug_row
     
     def subtract_row(self, row1, aug_row1, row2, aug_row2):
-
         resultant_row = []
-        
         for i in range(0, len(row2)):
             resultant_row.append(row1[i] - row2[i])
-
         resultant_aug_row = aug_row1 - aug_row2
-
         return resultant_row, resultant_aug_row
     
     def multiply_row_const(self, row, aug, const):
-        
         new_aug = aug*const
         resultant = []
         for i in row:
@@ -79,7 +83,6 @@ class Board:
         return resultant, new_aug
     
     def divide_row_const(self, row, aug, const):
-
         new_aug = aug/const
         resultant = []
         for i in row:
@@ -87,24 +90,19 @@ class Board:
         return resultant, new_aug
     
     def __str__(self):
-
         string = ""
-
         for i in self.matrix:
             for j in i:
                 string += str(j) + " "
             string += "| "+ str(self.aug_matrix[self.matrix.index(i)]) + "\n"
-
         return string
     
     def __repr__(self):
         string = ""
-
         for i in self.matrix:
             for j in i:
                 string += str(j) + " "
             string += "| "+ str(self.aug_matrix[self.matrix.index(i)]) + "\n"
-
         return string
 
 class Solver:
@@ -151,6 +149,7 @@ class Solver:
                     state.matrix[i] = temp_matrix_row
                     state.aug_matrix[i] = temp_aug_row
                     return state # Return the modified state
+                
         return None # Return None if no swap was needed or performed
 
     def get_backward_starting_point(self, state:Board):
